@@ -21,53 +21,43 @@
 
 ## What This Does
 
-The corpus is `campus_life`: 88 short posts about one university, written the
-way students actually talk to each other. Dorms, dining halls, courses, and
-registrar policy.
+The corpus is `campus_life`: 88 short posts about one university, covering
+dorms, dining halls, courses, and registrar policy.
 
-It answers specific factual questions that have one right answer. What a dryer
-costs in Morrow House, how late you can drop a course, how many hours a week
-BIOL 160 takes. It retrieves the three closest chunks, answers only from those,
-and names the file it used. If nothing is close enough it says it doesn't have
-enough information instead of guessing.
+It answers specific questions that have one right answer. What a dryer costs in
+Morrow House, how late you can drop a course, how many hours a week BIOL 160
+takes. It pulls the three closest chunks, answers only from those, and names
+the file. If nothing is close enough it says it doesn't have enough
+information.
 
 ## Chunking Strategy
 
 **Chunk size:** 450 characters max, 100 min, split on paragraph breaks
 **Overlap:** none. I repeat the document's title line in every chunk instead.
 
-**What I noticed.** `python app.py index` told me the starter wasn't chunking
-anything: 88 documents in, 88 chunks out. My longest document is 549 characters
-and the starter cuts at 800, so it never fired once. That sounds fine until you
-read one. `housing_old_brewhouse.txt` is 550 characters covering the building's
-history, the heating, the laundry prices, and the noise. Ask about noise and
-the chunk you get back is mostly about heating. One file was not one thought.
+**What I noticed.** `app.py index` showed the starter wasn't chunking anything:
+88 documents in, 88 chunks out. My longest document is 549 characters and the
+starter cuts at 800, so it never fired. But `housing_old_brewhouse.txt` is 550
+characters covering the building's history, the heating, the laundry prices and
+the noise. Ask about noise and the chunk is mostly about heating. One file was
+not one thought, so I split on the blank lines the writers already put in. That
+took 88 chunks to 135.
 
-So I split on the blank lines the writers already put in, because those breaks
-are topical here: one paragraph is the heating, the next is the laundry. That
-took me from 88 chunks to 135, and 41 of the 88 documents now split.
+**Why 450.** The longest paragraph is 373 characters and the longest title is
+47. I tried 400 first and those two together would have cut a paragraph in
+half.
 
-**Why 450.** I picked 400 first, then measured the paragraphs: the longest is
-373 characters and the longest title is 47. At 400 those two together would
-have forced a paragraph apart, which is the one thing this chunker exists to
-prevent. 450 is the smallest ceiling that never cuts anything here.
-
-**Why a 100 floor.** Paragraphs run about 80 to 150 characters, so splitting on
-every blank line alone makes fragments. Anything under 100 in this corpus is a
+**Why 100.** Paragraphs run 80 to 150 characters. Anything under 100 here is a
 heading or a one line aside, so it gets merged into the paragraph after it.
 
-**Why no overlap.** Every document names its subject once, in the title line,
-and never again. The body of `housing_old_brewhouse.txt` says "the heating is
-uneven" without saying which building, and there are 21 housing files. That is
-the real problem overlap was meant to solve, so I solved it directly by
-repeating the title in every chunk. It costs about 30 characters instead of
-120, and it doesn't manufacture more near duplicates in a corpus that already
-has seven nearly identical laundry files.
+**Why no overlap.** Every document names its subject once, in the title line.
+The body of `housing_old_brewhouse.txt` says "the heating is uneven" without
+saying which building, and there are 21 housing files. Repeating the title
+fixes that for 30 characters instead of 120.
 
 ## Sample Chunks
 
-Printed by `python app.py chunks -n 5`. All five produced by
-`chunker.py::split_documents`.
+From `app.py chunks -n 5`. All five produced by `chunker.py::split_documents`.
 
 **Chunk 1** | source: `admin_add_drop_deadline.txt#0` | produced by: `chunker.py::split_documents`
 
@@ -80,8 +70,6 @@ on your transcript. Nothing anywhere on the registrar's site says this plainly,
 and students find out from each other.
 ```
 
-Stands alone. Both deadlines and the penalty are in it.
-
 **Chunk 2** | source: `course_cs_340.txt#0` | produced by: `chunker.py::split_documents`
 
 ```
@@ -91,9 +79,6 @@ I'm a junior and I've done this twice now. Format is lecture twice a week plus
 a project that runs the whole term. Assessment: one midterm and a final, both
 open-book. Lightly curved, usually two or three points.
 ```
-
-Stands alone, and the course code is in it. That matters because CS 210 is a
-near twin of this file.
 
 **Chunk 3** | source: `course_phys_130_workload.txt#0` | produced by: `chunker.py::split_documents`
 
@@ -108,8 +93,7 @@ you're learning the format.
 ```
 
 Two paragraphs because the first is 95 characters, under my floor, so it
-absorbed the next one. The weakest of the five: that second paragraph is
-boilerplate that appears in nine workload files.
+absorbed the next one.
 
 **Chunk 4** | source: `health_center.txt#1` | produced by: `chunker.py::split_documents`
 
@@ -121,9 +105,8 @@ with a shorter wait than people expect — usually three or four days for a firs
 session.
 ```
 
-This is why I repeat the title. It's chunk 1, not chunk 0, so the title isn't
-natively part of it. Without the repeat it reads "Counselling is separate, in
-the same building" and never says which building.
+This is why I repeat the title. It's chunk 1, not chunk 0, so without the
+repeat it never says which building.
 
 **Chunk 5** | source: `housing_morrow_house_noise.txt#0` | produced by: `chunker.py::split_documents`
 
@@ -133,16 +116,6 @@ Noise levels in Morrow House
 Asked about this a lot so writing it down. Loud until about 1am on weekends, no
 enforced quiet hours.
 ```
-
-Stands alone and names the building, which it has to: seven buildings have a
-noise file and they differ only in the hours.
-
-**What splitting cost me.** Promoting paragraphs to chunks also promoted the
-boilerplate. The front loaded line is now its own chunk in five workload files,
-and a line about the library being open until 2am is its own chunk in four.
-They carry a title so they're distinguishable, but they say nothing specific
-and there are nine of them competing for slots. Dropping any paragraph that
-appears verbatim in three or more documents would fix it. I haven't done it.
 
 ## Sample Answer
 
@@ -161,11 +134,7 @@ Source: housing_morrow_house.txt (also found in housing_morrow_house_laundry.txt
 Sources retrieved: housing_morrow_house.txt, housing_morrow_house_laundry.txt
 ```
 
-$1.25 is the only dry price in the corpus belonging to one building. The other
-six charge $1.50 or $1.75, so an answer that drifted to a neighbour would show
-up in the price itself.
-
-Asked something the corpus doesn't cover:
+Off topic, for contrast:
 
 ```
 $ python app.py ask "How do I write a for loop in Rust?"
@@ -190,63 +159,29 @@ from 5.
 | Who won the 1994 World Cup? | no | 0.886 |
 | How do I change the oil in a diesel engine? | no | 0.934 |
 
-The two groups are 0.133 to 0.322 and 0.825 to 0.934, so the gap is 0.322 to
-0.825 and almost anything in it would score 10 out of 10 on these ten
-questions.
+The gap is 0.322 to 0.825. I didn't take the middle, because I wrote those five
+questions with the corpus open. Typed the way someone actually would, "can I
+still get out of a class" scores 0.610 with the answer at rank 2, so 0.6 would
+refuse a question the corpus answers. 0.7 clears that and still sits 0.125
+under the nearest out of scope question.
 
-I didn't take the middle, because that gap is flattered. I wrote those five
-questions with the corpus open in another window. Rephrased the way someone
-would actually type them, questions the corpus still answers score much worse:
-
-| Loose phrasing | Best distance | Answer in corpus? |
-|---|---|---|
-| can I still get out of a class | 0.610 | yes, rank 2 |
-| how bad is cell bio | 0.510 | yes, rank 1 |
-| doctor | 0.815 | yes, rank 1 |
-
-So the honest in corpus range runs to 0.610, not 0.322. At the 0.6 that
-shipped, "can I still get out of a class" gets refused while the answer sits at
-rank 2 in `admin_add_drop_deadline.txt`. That's the too low failure and the
-default was one phrasing away from it. 0.7 clears every sentence shaped
-question I can answer and still sits 0.125 under the nearest one I can't. I
-didn't go higher because the one word query "doctor" hits 0.815, inside the out
-of scope group, so past about 0.8 the two groups really do overlap.
-
-**Why top k 3.** The answer chunk was rank 1 for all five questions, and the
-distance jumps after rank 2 every time: 0.32 to 0.42 on Morrow House, 0.31 to
-0.43 on BIOL 160, 0.38 to 0.49 on add/drop. Ranks 3 to 5 were the same
-paragraph from the wrong course, matching because every workload file opens
-"People keep asking so". Feeding the model three of those is how a wrong
-citation happens, so I stopped at 3.
-
-At top k 3 and cutoff 0.7: 5 of 5 test questions answered with the expected
-fact retrieved, 5 of 5 out of scope questions refused.
-
-**Grounding.** I left `GROUNDING_INSTRUCTION` alone, but tested it on four near
-misses first, since the gate only catches the obvious ones. Asking the cost of
-laundry in Tamsin Court is the one that convinced me: Tamsin has in unit
-machines and no price, but Aldridge Hall at $1.75 and Fenwick Court at $2.00
-were both in the same context window. It refused instead of borrowing one.
+Top k went to 3 because the answer was rank 1 for all five questions and the
+distance jumps after rank 2 every time. Ranks 3 to 5 were the same paragraph
+from the wrong course.
 
 ## How I Used AI
 
-**1. The chunker merged paragraphs it should have left apart.** I asked Claude
-to write `split_documents` from my notes: split on blank lines, 400 ceiling,
-100 floor, repeat the title. What came back merged any two paragraphs whenever
-they fit under the ceiling. My documents average 317 characters, so almost
-everything merged straight back into one piece and only 5 of 88 documents split
-at all, which is what the starter already did. I changed the condition to merge
-only while a piece is under the 100 floor, and 41 documents split. That version
-also added the title after checking the size, so 7 chunks came out over my own
-ceiling.
+**1.** I asked Claude to write `split_documents` from my notes: split on blank
+lines, 400 ceiling, 100 floor, repeat the title. It merged any two paragraphs
+that fit under the ceiling, so with documents averaging 317 characters almost
+everything merged back into one piece and only 5 of 88 split. I changed it to
+merge only while a piece is under the 100 floor, and 41 split.
 
-**2. It accepted 0.6 because my questions were too easy.** I asked for the two
-distance groups so I could place the cutoff. They came back clean, 0.133 to
-0.322 against 0.825 to 0.934, with 0.6 sitting safely in the gap. But I wrote
-those questions with the corpus open, so I asked it to rerun them phrased the
-way a student would type them. "can I still get out of a class" scored 0.610
-with the answer at rank 2, meaning 0.6 would refuse it. I set the cutoff to
-0.7.
+**2.** I asked for the two distance groups to place the cutoff. They came back
+0.133 to 0.322 against 0.825 to 0.934, with 0.6 sitting fine in the gap. But I
+wrote those questions with the corpus open, so I had it rerun them phrased
+loosely. "can I still get out of a class" scored 0.610, which 0.6 would refuse.
+I set the cutoff to 0.7.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
