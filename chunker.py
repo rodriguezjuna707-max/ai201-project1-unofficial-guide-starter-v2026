@@ -82,22 +82,75 @@ def fallback_split(
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Split on paragraph breaks, carrying the title line into every chunk.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    Written for campus_life, where `app.py index` showed the starter cutting
+    nothing at all: the longest document is 549 characters against an 800
+    character window, so 88 documents came out as 88 chunks. Several of those
+    documents hold three or four separate topics, so one file is not one
+    thought here.
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
+    Three rules, in the order they apply:
 
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+      1. Split on blank lines. These documents already mark their own topic
+         boundaries that way, and a character count would ignore them.
+      2. One paragraph per chunk. Merge forward ONLY while a piece is still
+         under MIN_CHARS, so headings and one line asides get absorbed but two
+         paragraphs on different topics never get glued together just because
+         there happened to be room for them.
+      3. Prepend the title line to every chunk after the first. Each document
+         names its subject once, in the title, so without this the paragraph
+         about uneven heating doesn't say which building it belongs to.
+
+    Rule 3 is what replaces the starter's 120 character overlap. See the
+    Chunking Strategy section of the README for why.
+
+    CHUNK_SIZE is a ceiling I check rather than a window I cut on: the longest
+    paragraph in this corpus is 373 characters and the longest title is 47, so
+    at 450 nothing is ever forced apart. If a future document does exceed it,
+    the paragraph is kept whole and reported by `describe` as the longest
+    chunk, because splitting mid sentence is the failure this chunker exists to
+    avoid.
     """
-    return fallback_split(documents)
+    min_chars = config.CHUNK_MIN
+
+    chunks: list[Chunk] = []
+    for doc in documents:
+        paragraphs = [p.strip() for p in doc.text.split("\n\n") if p.strip()]
+        if not paragraphs:
+            continue
+
+        # The first line is the document's title. Everything after it is body.
+        title = paragraphs[0].splitlines()[0].strip()
+        body = paragraphs[1:] if len(paragraphs) > 1 else paragraphs
+
+        # Rules 1 and 2: one paragraph per piece, absorbing anything too thin.
+        pieces: list[str] = []
+        for para in body:
+            if pieces and len(pieces[-1]) < min_chars:
+                pieces[-1] = f"{pieces[-1]}\n\n{para}"
+            else:
+                pieces.append(para)
+
+        # A trailing piece below the floor has nothing after it to merge into,
+        # so fold it backwards instead of storing a fragment.
+        if len(pieces) > 1 and len(pieces[-1]) < min_chars:
+            tail = pieces.pop()
+            pieces[-1] = f"{pieces[-1]}\n\n{tail}"
+
+        # Rule 3: every chunk carries the subject.
+        for index, piece in enumerate(pieces):
+            text = piece if piece.startswith(title) else f"{title}\n\n{piece}"
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
