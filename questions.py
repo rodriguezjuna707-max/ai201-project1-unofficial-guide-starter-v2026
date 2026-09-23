@@ -22,12 +22,47 @@ names a target of "4 of 5", and four of three is not a thing.
 """
 
 QUESTIONS = [
-    # {"question": "...", "expects": "..."},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
+    # Every `expects` below is a literal string from the corpus, so I can check
+    # it with a substring match instead of re-reading an answer and deciding how
+    # I feel about it. The file each one lives in is noted for criterion 5.
+    {
+        # 7 buildings have a laundry file and they are near identical apart from
+        # the prices. $1.25 is the only dry price that belongs to one building,
+        # so a wrong dorm is visible in the answer. This is the one I expect to
+        # miss under criterion 1.
+        # housing_morrow_house_laundry.txt, housing_morrow_house.txt
+        "question": "How much does a dryer cost in Morrow House?",
+        "expects": "$1.25",
+    },
+    {
+        # The opposite case: this number is in one file out of 88.
+        # admin_printing_quota.txt
+        "question": "How many black and white pages does the printing quota cover?",
+        "expects": "600",
+    },
+    {
+        # One file, and also the nearest neighbour to the ibuprofen question in
+        # OUT_OF_SCOPE, which is why criterion 3 is 4 of 5 and not 5 of 5.
+        # health_center.txt
+        "question": "When are the walk in hours at the health centre?",
+        "expects": "8am to 11am",
+    },
+    {
+        # Shares "week six" with admin_withdrawal_deadline.txt, which is a
+        # different deadline. Tests whether retrieval separates two policies
+        # that use the same words.
+        # admin_add_drop_deadline.txt
+        "question": "How late in the term can I drop a course?",
+        "expects": "week six",
+    },
+    {
+        # BIOL 160 has three files and this fact sits in two of them. Both are
+        # honest sources, so criterion 5 passes on either; citing the third one,
+        # course_biol_160_exams.txt, is the failure it is looking for.
+        # course_biol_160.txt, course_biol_160_workload.txt
+        "question": "How many hours a week does BIOL 160 take?",
+        "expects": "9 to 11 hours",
+    },
 ]
 
 # Questions from a different world entirely. Your gate should refuse all five.

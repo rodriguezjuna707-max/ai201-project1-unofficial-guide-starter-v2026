@@ -23,8 +23,11 @@ For at least 4 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
 **Why this target:**
-<!-- e.g. "One of my questions is about a topic only two documents mention, so
-     I expect that one to be hard." -->
+
+Laundry comes up in 14 of my 88 files and the seven building laundry files are
+near identical apart from the prices, so my Morrow House question has to beat
+six lookalikes for a slot. The printing quota sits in one file and should be
+easy. I left room for one miss because I expect Morrow House to be the failure.
 
 ---
 
@@ -33,8 +36,10 @@ contains the answer.
 Every answer the system produces names at least one source document.
 
 **Why this target:**
-<!-- Why all five and not four? What about your setup makes that achievable —
-     or what would have to go wrong for it not to be? -->
+
+Every chunk already carries its filename, so naming a source is a formatting
+job rather than a retrieval job. If it fails even once that is a bug in my
+prompt and not a hard question, so there is no reason to accept four.
 
 ---
 
@@ -50,8 +55,11 @@ in at least 4 of 5 tries.
      just keep five of them, or the "4 of 5" above has nothing to be 4 of. -->
 
 **Why this target:**
-<!-- What did your distances look like when you set the cutoff in Milestone 4?
-     Was there a clean gap, or did the two groups overlap? -->
+
+Three of the five are from another planet and should sit far away, but two have
+a neighbour in my corpus: the ibuprofen question sits near health_center.txt
+and the Rust question sits near six CS course files. I expect one of those two
+to land inside the cutoff and slip through.
 
 ---
 
@@ -69,9 +77,19 @@ in at least 4 of 5 tries.
        - "No chunk is shorter than 200 characters, since anything below that
           in my corpus turned out to be a heading with no content under it." -->
 
-
+Taking every 9th chunk in index order (10 chunks out of roughly 88, and the
+same 10 every time I check), at least 9 stand on their own: the chunk repeats
+the subject from the title line of the file it came from, and neither end stops
+in the middle of a sentence.
 
 **Why this target:**
+
+My files run 179 to 550 characters and none reach 800, so the starter chunker
+never cuts anything and this passes for free today. It stops being free in
+Milestone 3, because each file names its subject once in the title line and
+never again, so a paragraph chunk from the middle of housing_old_brewhouse.txt
+is about no building at all. I allow one miss because the exams files are under
+210 characters and mostly title anyway.
 
 
 
@@ -87,9 +105,21 @@ in at least 4 of 5 tries.
      present — anything, as long as it names a number or an observable
      outcome. -->
 
-
+The cited source is the right one. For at least 4 of my 5 test questions, the
+`expects` phrase I wrote for that question in `questions.py` appears in the
+file the answer cites — not only in a sibling file about the same dorm or the
+same course.
 
 **Why this target:**
+
+BIOL 160 has three files and 21 of my 88 are housing write ups, so at TOP_K 5
+the whole sibling cluster comes back and citing the wrong twin is easy. I allow
+one miss because I do not yet know whether the generator cites the file it
+actually used.
+
+I check against `expects` rather than against whatever the answer claimed,
+because an answer can make several claims and I would pick a different one on a
+different day.
 
 
 
