@@ -146,18 +146,19 @@ I don't have enough information about that.
 **My relevance cutoff:** 0.7, up from the 0.6 that shipped. Top k is 3, down
 from 5.
 
-| Question | In corpus? | Best distance |
-|---|---|---|
-| When are the walk in hours at the health centre? | yes | 0.133 |
-| How many hours a week does BIOL 160 take? | yes | 0.294 |
-| How much does a dryer cost in Morrow House? | yes | 0.304 |
-| How late in the term can I drop a course? | yes | 0.304 |
-| How many black and white pages does the printing quota cover? | yes | 0.322 |
-| What is the capital of Mongolia? | no | 0.825 |
-| What is the recommended dosage of ibuprofen for a headache? | no | 0.848 |
-| How do I write a for loop in Rust? | no | 0.877 |
-| Who won the 1994 World Cup? | no | 0.886 |
-| How do I change the oil in a diesel engine? | no | 0.934 |
+
+| Question                                                      | In corpus? | Best distance |
+| --------------------------------------------------------------- | ------------ | --------------- |
+| When are the walk in hours at the health centre?              | yes        | 0.133         |
+| How many hours a week does BIOL 160 take?                     | yes        | 0.294         |
+| How much does a dryer cost in Morrow House?                   | yes        | 0.304         |
+| How late in the term can I drop a course?                     | yes        | 0.304         |
+| How many black and white pages does the printing quota cover? | yes        | 0.322         |
+| What is the capital of Mongolia?                              | no         | 0.825         |
+| What is the recommended dosage of ibuprofen for a headache?   | no         | 0.848         |
+| How do I write a for loop in Rust?                            | no         | 0.877         |
+| Who won the 1994 World Cup?                                   | no         | 0.886         |
+| How do I change the oil in a diesel engine?                   | no         | 0.934         |
 
 The gap is 0.322 to 0.825. I didn't take the middle, because I wrote those five
 questions with the corpus open. Typed the way someone actually would, "can I
@@ -208,13 +209,14 @@ I set the cutoff to 0.7.
 
      Milestone 1. -->
 
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
-|---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+
+| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
+| ---------------------------------------- | -------- | ------- | ------- | ------- | --------- |
+| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
+| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
+| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
+| 4.                                     |        |       |       |       |         |
+| 5.                                     |        |       |       |       |         |
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
@@ -231,13 +233,14 @@ I set the cutoff to 0.7.
 
      Milestone 2. -->
 
+
 | # | Criterion | Verdict | How I decided |
-|---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| --- | ----------- | --------- | --------------- |
+| 1 |           |         |               |
+| 2 |           |         |               |
+| 3 |           |         |               |
+| 4 |           |         |               |
+| 5 |           |         |               |
 
 ## Diagnoses
 
@@ -273,13 +276,14 @@ I set the cutoff to 0.7.
 <!-- Same format, same five criteria, three runs each.
      `python run_eval.py --label after` -->
 
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
-|---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+
+| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
+| ---------------------------------------- | -------- | ------- | ------- | ------- | --------- |
+| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
+| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
+| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
+| 4.                                     |        |       |       |       |         |
+| 5.                                     |        |       |       |       |         |
 
 **Did it help?**
 
