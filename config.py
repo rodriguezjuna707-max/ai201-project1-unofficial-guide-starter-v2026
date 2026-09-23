@@ -27,13 +27,24 @@ CORPUS = os.getenv("AI201_CORPUS", "campus_life")
 # These are deliberately plain, generic numbers. Milestone 3 is where you
 # replace them with numbers that fit the documents you actually read.
 
-CHUNK_SIZE = 800        # characters per chunk
-CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
+# Milestone 3. Reasoning is in the README's Chunking Strategy section.
+# CHUNK_SIZE is a ceiling my chunker merges up to, not a window it cuts on.
+CHUNK_SIZE = 450        # most characters a chunk may reach, title included
+CHUNK_MIN = 100         # below this a piece gets merged into its neighbour
+CHUNK_OVERLAP = 120     # only fallback_split uses this; my chunker repeats the
+                        # title line instead
 
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────
 
-TOP_K = 5               # how many chunks to pull back per question
+TOP_K = 3               # how many chunks to pull back per question
+# Milestone 4. Was 5. The chunk holding the answer came back at rank 1 for all
+# five test questions, and the distance jumps hard after rank 2 every time
+# (0.32 -> 0.42 on Morrow House, 0.31 -> 0.43 on BIOL 160, 0.38 -> 0.49 on
+# add/drop). Slots 4 and 5 only ever held the same paragraph from the wrong
+# course or the wrong building, which is exactly what criterion 5 is watching
+# for, so handing three of them to the model was buying miscitation risk and
+# nothing else.
 
 # The relevance gate. If the best chunk is further away than this, the system
 # refuses to answer instead of handing the model thin material.
@@ -43,7 +54,21 @@ TOP_K = 5               # how many chunks to pull back per question
 # 0.6 is a reasonable starting point, not a right answer. Milestone 4 has you
 # measure your own two groups of distances and put the cutoff in the gap.
 # Most corpora land somewhere between 0.45 and 0.75.
-THRESHOLD = 0.6
+#
+# Milestone 4. Measured, was 0.6.
+#   my 5 test questions      0.133 to 0.322
+#   the 5 in OUT_OF_SCOPE    0.825 to 0.934
+# That looks like a 0.50 wide gap and it is a lie. Those five questions were
+# written by someone holding the corpus open. Rephrased the way a student would
+# actually type them, the same answerable questions score much worse:
+#   "can I still get out of a class"  0.610  (answer is in add/drop deadline)
+#   "how bad is cell bio"             0.510
+#   "is it expensive to dry clothes"  0.455
+# So the real in-corpus range runs to 0.610, not 0.322, and at the shipped 0.6
+# the add/drop question gets refused despite the answer sitting in the corpus.
+# 0.7 clears every sentence-shaped question I could answer (0.610) and still
+# sits 0.125 below the closest thing I cannot (0.825).
+THRESHOLD = 0.7
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────
