@@ -365,6 +365,54 @@ that never happened, and criterion 4 was already passing before Milestone 3.
 
      Milestone 3. -->
 
+**Nothing missed, so there is no miss to diagnose.** The honest reading of the
+verdicts table is that my targets were set low, not that the system is strong.
+Four of the five left room for a miss that never came, and every one of my test
+questions was written with the corpus open, in the corpus's own words.
+
+**The criterion I'd tighten is 3, the gate.** As written it only checks one
+direction: does the gate keep out questions the corpus can't answer. That was
+never the hard direction. The closest out-of-corpus question was 0.825, well
+clear of the 0.7 cutoff. The risk I noted in Milestone 4 was the other way
+round: a real question, typed casually, landing past the cutoff and getting
+refused. Criterion 3 never tests that.
+
+> **Tighter target for criterion 3:** The gate refuses at least 4 of 5
+> `OUT_OF_SCOPE` questions **and** lets through 5 of 5 of my test questions
+> asked the way a student would type them.
+
+The five student phrasings. The first two are from my Milestone 4 notes in
+`config.py`. I wrote the last three today, before measuring them. The
+Milestone 4 dryer phrasing, "is it expensive to dry clothes", names no building
+and so has no single right answer, so I replaced it with one that names Morrow.
+Measured with `store.py::search` (top-k 3) and `gate.py::check` (cutoff 0.7):
+
+```
+can I still get out of a class    | hit: [2]    | best 0.610 | gate pass
+how bad is cell bio               | hit: [1]    | best 0.510 | gate pass
+how much is the dryer in morrow   | hit: [1, 2] | best 0.279 | gate pass
+how much printing do I get        | hit: [1]    | best 0.364 | gate pass
+can I just walk into the doctor   | hit: [1]    | best 0.716 | gate REFUSED
+```
+
+Against the tighter target that is 4 of 5 let through, so criterion 3 would be
+**MISSED**.
+
+**Stage: retrieval.** The gate decides from the distance of the best chunk
+`store.py::search` returns, so the refusal happens in retrieval, before
+generation ever sees the question.
+
+**Mechanism:** The corpus never uses the word "doctor". It isn't in any of the
+88 files. `health_center.txt` says "The health centre" and "Walk-in hours are
+8am to 11am". So all-MiniLM-L6-v2 has to bridge "doctor" to "health centre" and
+"walk into" to "walk-in" by meaning alone. It does that well enough to rank the
+right chunk first, but its absolute distance comes out at 0.716. The gate
+applies one fixed cutoff of 0.7 to that number, and I set it with only 0.09 of
+margin over the worst casual phrasing I had tested (0.610). The ranking is
+right. The fixed number it gets compared against is what fails. The wording
+matters: "when can I see a doctor without an appointment" reaches the same
+chunk at 0.558 and passes, because "appointment" is in the file.
+
 ## The Improvement
 
 **What I changed:**
