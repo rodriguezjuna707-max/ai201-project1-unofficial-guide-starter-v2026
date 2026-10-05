@@ -125,7 +125,7 @@ enforced quiet hours.
 
 ```
 $ python app.py ask "How much does a dryer cost in Morrow House?"
-  (best distance 0.304, cutoff 0.7)
+  (best distance 0.304, cutoff 0.7)  
 
 A dryer in Morrow House costs $1.25.
 
@@ -210,17 +210,116 @@ I set the cutoff to 0.7.
      Milestone 1. -->
 
 
-| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
-| ---------------------------------------- | -------- | ------- | ------- | ------- | --------- |
-| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
-| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
-| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
-| 4.                                     |        |       |       |       |         |
-| 5.                                     |        |       |       |       |         |
+Source data: `results/run_2026-10-05_0019_before.md`, written by
+`run_eval.py::main`. Five questions from `questions.py::QUESTIONS`, three runs
+each with caching off, corpus `campus_life`, top-k 3, cutoff 0.7. That file has
+one row per question with `scorer.py::judge`'s overall pass/fail. I split each
+run back into the separate checks in `scorer.py::score` and counted per
+criterion.
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 |  |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 |  |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 |  |
+| 4. Sampled chunks stand on their own | 9 of 10 | 15/15 | 15/15 | 15/15 |  |
+| 5. The cited source is the right one | 4 of 5 | 5/5 | 5/5 | 5/5 |  |
+
+Three of these rows can't move between runs, so they have one number repeated.
+Criterion 1 is retrieval, and the same question against the same index returns
+the same three chunks every time. Criterion 3 is one pass of
+`run_eval.py::check_out_of_scope` with no model call. Criterion 4 is a property
+of `chunker.py::split_documents` and doesn't involve a run at all. Criteria 2
+and 5 read the generated text, so they could have moved.
+
+They didn't, so I checked the runs were real and not cached. The answer text
+differs between runs and between this file and the earlier
+`results/run_2026-09-23_2116_before.md`, which used the same settings. Printing
+quota run 3 on 10-05 says "The printing quota of $30 per semester covers roughly
+600 black-and-white pages", and none of the other five runs of that question
+mention the $30.
+
+### Real output
+
+**Criterion 1.** `store.py::search` with top-k 3, scored by
+`scorer.py::retrieval_hit`. Taken from `results/run_2026-10-05_0019_before.md`,
+the Morrow House question, which is the one criteria.md predicted would miss:
+
+```
+### How much does a dryer cost in Morrow House? — run 1
+
+- Best distance: 0.3038 (passed the gate)
+- Sources retrieved: housing_morrow_house.txt, housing_morrow_house_laundry.txt
+```
+
+The other six laundry files didn't get a slot. All three results were Morrow
+House chunks (two from `housing_morrow_house.txt`, at 0.304 and 0.424, plus the
+laundry file at 0.323), which is why only two sources are listed.
+
+**Criterion 2.** `generate.py::answer_from_chunks`, scored by
+`scorer.py::names_source`. All 15 answers name a file that exists in the corpus.
+Here are three runs of the same question from
+`results/run_2026-10-05_0019_before.md`. The format changes but the citation is
+there every time:
+
+```
+A dryer costs $1.25 in Morrow House, as stated in the documents `housing_morrow_house.txt` and `housing_morrow_house_laundry.txt`.
+```
+```
+A dryer in Morrow House costs $1.25. 
+
+Source: housing_morrow_house.txt (also found in housing_morrow_house_laundry.txt)
+```
+```
+A dryer in Morrow House costs $1.25. 
+
+Source: housing_morrow_house.txt (also mentioned in housing_morrow_house_laundry.txt)
+```
+
+Run 1 wraps the filenames in backticks and the other two don't, which is why
+`scorer.py::normalise` strips backticks before matching.
+
+**Criterion 3.** `run_eval.py::check_out_of_scope`, cutoff 0.7, copied from
+`results/run_2026-10-05_0019_before.md`:
+
+```
+Produced by `run_eval.py::check_out_of_scope`, cutoff 0.7. Refused 5 of 5.
+
+| What is the capital of Mongolia? | 0.825 | refused |
+| How do I change the oil in a diesel engine? | 0.934 | refused |
+| Who won the 1994 World Cup? | 0.886 | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.848 | refused |
+| How do I write a for loop in Rust? | 0.877 | refused |
+```
+
+**Criterion 4.** `chunker.py::split_documents`, taking every 9th of the 135
+chunks it produces, which gives 15 chunks. For each one I checked that it starts
+with its file's title line, that the body after the title starts a sentence,
+and that it ends on `.`, `!` or `?`. All 15 pass. Here is the sample chunk the
+criterion exists for, a mid-file paragraph that only names its subject because
+of the title line:
+
+```
+health_center.txt#1
+
+The health centre
+
+Counselling is separate, in the same building, and has its own intake process with a shorter wait than people expect — usually three or four days for a first session.
+```
+
+**Criterion 5.** `generate.py::answer_from_chunks`, scored by
+`scorer.py::citation_right`, which looks for the `expects` phrase in the cited
+file on disk. From `results/run_2026-10-05_0019_before.md`, BIOL 160 run 1:
+
+```
+BIOL 160 takes 9 to 11 hours a week (source: course_biol_160.txt and course_biol_160_workload.txt).
+```
+
+"9 to 11 hours" is in both cited files. `citation_right` passes if *any* cited
+file has the phrase, which is looser than the criterion reads, so I also checked
+each cited file on its own. Every file named in all 15 answers contains its
+question's `expects` phrase. No answer cited `course_biol_160_exams.txt` or
+another building's laundry file.
 
 ## Verdicts
 
