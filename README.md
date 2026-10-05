@@ -184,6 +184,26 @@ wrote those questions with the corpus open, so I had it rerun them phrased
 loosely. "can I still get out of a class" scored 0.610, which 0.6 would refuse.
 I set the cutoff to 0.7.
 
+**3. (unit 2)** I had Claude check my run log draft against the results files
+before committing it. It found real errors. The draft cited a results file that
+didn't exist. It quoted answer text that wasn't in any run. It said every 9th of
+135 chunks was 10 chunks, when it's 15. And it gave the wrong question as the
+closest out-of-corpus one. Every number in the run logs now comes from a script
+that re-scores the results files with `scorer.py::score`, not from reading them
+by eye.
+
+**4. (unit 2)** With all five criteria met, I asked Claude where to look for a
+real failure. It suggested the gate's other direction, answerable questions
+typed casually, because my Milestone 4 notes already had one at 0.610. It ran
+five student phrasings and found "can I just walk into the doctor" refused at
+0.716, then checked that "doctor" is in none of the 88 files. That became my
+diagnosis. I kept its check that a second phrasing of the same question passes
+(0.558), so the diagnosis rests on the wording and not on a hand-picked example.
+
+**5. (unit 2)** I asked Claude why raising the cutoff might not work. Its
+answer is in "Did it help?": I tuned the number on the question it fixes, and
+the out-of-corpus margin dropped to 0.055.
+
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
@@ -539,9 +559,55 @@ holds for the questions I have. It isn't evidence the gate is right in general.
 
      Milestone 5. -->
 
+**No criterion is missed after the fix,** including the tightened criterion 3,
+which is now 5/5 in every run. That doesn't mean nothing is left. These are the
+weak spots I know about and chose not to fix this unit:
+
+- **The gate's margin is now thin on both sides.** It's about 0.055 each way:
+  0.716 for the worst answerable question, 0.825 for the nearest unanswerable
+  one. That margin comes from ten questions, and I set 0.77 using one of them.
+  What I'd do next is write a held-out set: ten more casual phrasings and five
+  off-topic questions that sit near the corpus (campus-sounding but not
+  covered, like "where is the library"). Then I'd check whether 0.77 still
+  separates them without retuning it. I stopped because the milestone asks for
+  one change, and doing this properly means writing new test questions, which
+  is next unit's criteria work, not a fix.
+- **A single fixed cutoff can't separate wording from relevance.** "doctor"
+  gets 0.716 and "doctor without an appointment" gets 0.558, the same question
+  0.16 apart. Any cutoff is a bet on how people phrase things. A fix that
+  addresses the cause would rewrite or expand the query before retrieval, or
+  gate on the gap between rank 1 and rank 2 rather than an absolute distance. I
+  didn't try either because both are bigger than one change, and I had no
+  measured failure left to aim them at.
+- **`scorer.py::citation_right` is looser than criterion 5 reads.** It passes
+  if *any* cited file has the answer. I checked every cited file separately for
+  all 45 answers in the three 10-05 logs and none was wrong, but the scorer would not have
+  caught it. The fix is a one-line change from `any` to `all`. I left it alone
+  because changing the scorer between the before and after runs would have made
+  the two logs measure different things.
+- **Every check is a substring match.** An answer saying "8:00 to 11:00" would
+  fail even though it's right. That hasn't happened in 60 answers across four logs, but it's a
+  false MISSED waiting to happen, not a known pass.
+
 ## What I'd Do Differently
 
 <!-- Knowing what you know now — which of your five criteria would you write
      differently, and why?
 
      Milestone 5. -->
+
+I'd rewrite criterion 3 to test both directions from the start, the version I
+ended up tightening it to. As written it only asked whether fake questions get
+kept out, which was never the risk: they all sat above 0.82. The failure that
+matters to a student is a real question getting refused, and my Milestone 4
+notes already showed it at 0.610. I wrote a criterion that could only pass.
+
+More generally, I'd write the test questions the way a student types, not with
+the corpus open. All five of mine use the corpus's own words, which is why
+criteria 1, 2 and 5 never moved. With "how bad is cell bio" in place of "How
+many hours a week does BIOL 160 take?", criterion 1 would actually have been
+tested.
+
+I'd also write criterion 4 against a fixed sample size ("15 chunks, spaced
+evenly") rather than "every 9th". The chunk count changed under it in
+Milestone 3, and I had to revise it.
