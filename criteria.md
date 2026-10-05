@@ -91,6 +91,19 @@ never again, so a paragraph chunk from the middle of housing_old_brewhouse.txt
 is about no building at all. I allow one miss because the exams files are under
 210 characters and mostly title anyway.
 
+> **Revised in unit 2:** Taking every 9th chunk in index order from
+> `chunker.py::split_documents` (15 chunks out of 135, the same 15 every time),
+> at least 14 stand on their own: the chunk starts with the title line of the
+> file it came from, and neither end stops in the middle of a sentence.
+>
+> **Why revised:** The original can't be measured as written. It assumed about
+> 88 chunks, so "every 9th" and "10 chunks" said the same thing. My Milestone 3
+> chunker produces 135, and now every 9th gives 15 chunks, not 10, so the two
+> halves of the sentence name different samples. I kept "every 9th" because it
+> covers the whole index rather than stopping a third of the way through, and I
+> scaled the bar to 14 of 15, the nearest whole count that isn't looser than 9
+> in 10. Both versions pass (15 of 15, and 10 of 10 on the first ten), so this
+> fixes the measurement and doesn't rescue a result.
 
 
 ---

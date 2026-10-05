@@ -219,11 +219,11 @@ criterion.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 |  |
-| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 |  |
-| 4. Sampled chunks stand on their own | 9 of 10 | 15/15 | 15/15 | 15/15 |  |
-| 5. The cited source is the right one | 4 of 5 | 5/5 | 5/5 | 5/5 |  |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks stand on their own | 9 of 10 (revised: 14 of 15) | 15/15 | 15/15 | 15/15 | MET |
+| 5. The cited source is the right one | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
 Three of these rows can't move between runs, so they have one number repeated.
 Criterion 1 is retrieval, and the same question against the same index returns
@@ -335,11 +335,15 @@ another building's laundry file.
 
 | # | Criterion | Verdict | How I decided |
 | --- | ----------- | --------- | --------------- |
-| 1 |           |         |               |
-| 2 |           |         |               |
-| 3 |           |         |               |
-| 4 |           |         |               |
-| 5 |           |         |               |
+| 1 | Retrieved chunk contains the answer (4 of 5) | MET | 5/5 in all three runs against a target of 4, and the Morrow House question I expected to miss was the one I watched. Its top three were all Morrow House chunks, so none of the six lookalike laundry files got in. |
+| 2 | Every answer names a source (5 of 5) | MET | 15 of 15 answers name a file that exists in the corpus. This target allows no misses, so one answer without a citation in any run would have made it MISSED. |
+| 3 | Gate stops out-of-corpus questions (4 of 5) | MET | All 5 refused, and the closest was Mongolia at 0.825, which is 0.125 outside the 0.7 cutoff. The two I predicted would slip through, ibuprofen (0.848) and Rust (0.877), weren't even the nearest. |
+| 4 | Sampled chunks stand on their own (9 of 10, revised to 14 of 15, see criteria.md) | MET | 15 of 15 sampled chunks start with their title line and begin and end on a sentence boundary. It passes under both the original and the revised wording, so the revision changes how it's measured, not the verdict. |
+| 5 | The cited source is the right one (4 of 5) | MET | 5/5 in every run. I didn't rely on `citation_right` alone because it accepts any one correct file, so I checked every cited file separately and none of them lacked the answer. |
+
+All five came out MET with room to spare, and no row was close. That tells me
+more about my targets than about the system. Four of the five allowed a miss
+that never happened, and criterion 4 was already passing before Milestone 3.
 
 ## Diagnoses
 
