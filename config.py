@@ -68,7 +68,13 @@ TOP_K = 3               # how many chunks to pull back per question
 # the add/drop question gets refused despite the answer sitting in the corpus.
 # 0.7 clears every sentence-shaped question I could answer (0.610) and still
 # sits 0.125 below the closest thing I cannot (0.825).
-THRESHOLD = 0.7
+#
+# Unit 2. Was 0.7. "can I just walk into the doctor" is answerable (the chunk
+# is rank 1 in health_center.txt) but scores 0.716, because the corpus never
+# says "doctor". The measured gap now runs 0.716 to 0.825; 0.77 is its middle,
+# about 0.055 of margin on each side instead of 0.016 on one and 0.125 on the
+# other.
+THRESHOLD = 0.77
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────

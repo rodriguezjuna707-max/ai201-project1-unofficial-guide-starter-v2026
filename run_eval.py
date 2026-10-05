@@ -132,10 +132,11 @@ def main():
         rows.append({"question": question, "expects": expects, "runs": run_results})
 
     gate_rows = check_out_of_scope(top_k, threshold, corpus, args.variant)
+    student_rows = check_student_phrased(top_k, threshold, corpus, args.variant)
 
     write_report(
         rows, transcript, gate_rows, args, corpus, top_k, threshold,
-        scored=judge is not None,
+        scored=judge is not None, student_rows=student_rows,
     )
 
 
@@ -176,7 +177,46 @@ def check_out_of_scope(top_k, threshold, corpus, variant):
     return rows
 
 
-def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, scored):
+def check_student_phrased(top_k, threshold, corpus, variant):
+    """Put every STUDENT_PHRASED question through retrieval and the gate.
+
+    The other direction from check_out_of_scope: these are answerable, so the
+    gate should let every one through. Same reasoning on cost and repeats —
+    no model call, and retrieval plus a fixed cutoff gives one number.
+    """
+    from store import search
+    import gate
+
+    items = getattr(qs, "STUDENT_PHRASED", [])
+    if not items:
+        return []
+
+    print("\nStudent-phrased questions (the gate should let these through):")
+    rows = []
+    for item in items:
+        question, expects = item["question"], item.get("expects", "")
+        results = search(question, top_k=top_k, corpus=corpus, variant=variant)
+        decision = gate.check(results, threshold=threshold)
+        needle = expects.lower()
+        hit_ranks = [i + 1 for i, r in enumerate(results) if needle and needle in r.text.lower()]
+        print(f"  {'let through' if decision.passed else 'REFUSED'}  "
+              f"(best distance {decision.best_distance:.3f})  {question}")
+        rows.append(
+            {
+                "question": question,
+                "passed": decision.passed,
+                "best_distance": decision.best_distance,
+                "hit_ranks": hit_ranks,
+            }
+        )
+
+    let_through = sum(r["passed"] for r in rows)
+    print(f"  -> gate let through {let_through} of {len(rows)}")
+    return rows
+
+
+def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, scored,
+                 student_rows=None):
     config.RESULTS_DIR.mkdir(exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M")
     label = f"_{args.label}" if args.label else ""
@@ -241,6 +281,29 @@ def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, sc
             question = row["question"].replace("|", "\\|")
             verdict = "refused" if row["refused"] else "**let through**"
             lines.append(f"| {question} | {row['best_distance']:.3f} | {verdict} |")
+
+    if student_rows:
+        let_through = sum(r["passed"] for r in student_rows)
+        lines += [
+            "",
+            "---",
+            "",
+            "## The relevance gate on student-phrased questions",
+            "",
+            f"Produced by `run_eval.py::check_student_phrased`, cutoff {threshold}. "
+            f"Let through {let_through} of {len(student_rows)}.",
+            "",
+            "Answerable questions typed casually. The gate should let every one",
+            "through. Deterministic for the same reason as the table above.",
+            "",
+            "| Student-phrased question | Answer at rank | Best distance | Gate |",
+            "|---|---|---|---|",
+        ]
+        for row in student_rows:
+            question = row["question"].replace("|", "\\|")
+            ranks = ", ".join(map(str, row["hit_ranks"])) or "not retrieved"
+            verdict = "let through" if row["passed"] else "**refused**"
+            lines.append(f"| {question} | {ranks} | {row['best_distance']:.3f} | {verdict} |")
 
     lines += ["", "---", "", "## Real output", "",
               "This is what the system actually produced. Paste the relevant parts",

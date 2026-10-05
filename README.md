@@ -415,35 +415,119 @@ chunk at 0.558 and passes, because "appointment" is in the file.
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** The relevance cutoff, `THRESHOLD` in `config.py`, from 0.7
+to 0.77. Nothing else in the pipeline changed: same chunker, same index, same
+top-k, same prompt.
 
-**Why I picked it:**
+**Why I picked it:** The diagnosis above found the gate refusing "can I just
+walk into the doctor" at 0.716 even though retrieval ranked the right chunk
+first, and the cutoff is the number that refusal is compared against.
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+I didn't pick hybrid search, even though it's the usual first choice. BM25
+matches words, and "doctor" isn't in any of the 88 files, so keyword search has
+nothing to find for this question.
 
-### Run Log — After
+Why 0.77 and not just "a bit higher than 0.716": the measured gap now runs from
+0.716 (the worst answerable question) to 0.825 (the nearest unanswerable one),
+and 0.77 is its middle. That leaves about 0.055 of margin on each side. 0.7 had
+0.125 on the out-of-corpus side and only 0.016 the wrong way on the other.
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
+To measure the tightened criterion in both logs, I added `STUDENT_PHRASED` to
+`questions.py` and `check_student_phrased` to `run_eval.py`. Those changes
+measure the system rather than change it, so I don't count them as part of the
+fix. The before log was produced with that code at the old 0.7 cutoff, so both
+logs report the same six rows.
 
+### Run Log — Before (cutoff 0.7)
 
-| Criterion                              | Target | Run 1 | Run 2 | Run 3 | Verdict |
-| ---------------------------------------- | -------- | ------- | ------- | ------- | --------- |
-| 1. Retrieved chunk contains the answer | 4 of 5 |       |       |       |         |
-| 2. Every answer names a source         | 5 of 5 |       |       |       |         |
-| 3. Gate stops out-of-corpus questions  | 4 of 5 |       |       |       |         |
-| 4.                                     |        |       |       |       |         |
-| 5.                                     |        |       |       |       |         |
+`results/run_2026-10-05_0033_before.md`, written by `run_eval.py::main`.
 
-**Did it help?**
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3, tightened. …and lets student-phrased questions through | 5 of 5 | 4/5 | 4/5 | 4/5 | MISSED |
+| 4. Sampled chunks stand on their own | 14 of 15 | 15/15 | 15/15 | 15/15 | MET |
+| 5. The cited source is the right one | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+### Run Log — After (cutoff 0.77)
 
-     Milestone 4. -->
+`results/run_2026-10-05_0034_after.md`, written by `run_eval.py::main`.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3, tightened. …and lets student-phrased questions through | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks stand on their own | 14 of 15 | 15/15 | 15/15 | 15/15 | MET |
+| 5. The cited source is the right one | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+Both gate rows are deterministic, measured in one pass each by
+`run_eval.py::check_out_of_scope` and `run_eval.py::check_student_phrased`, so
+one number repeats across the three columns. Criterion 4 is measured on
+`chunker.py::split_documents`, which this change didn't touch. Criteria 1, 2 and
+5 come from splitting each run's `scorer.py::judge` result back into its
+separate checks. I checked every file cited in all 30 answers on its own, and
+each one contains its question's `expects` phrase.
+
+Real output. From `results/run_2026-10-05_0033_before.md`, produced by
+`run_eval.py::check_student_phrased`:
+
+```
+Produced by `run_eval.py::check_student_phrased`, cutoff 0.7. Let through 4 of 5.
+
+| can I still get out of a class | 2 | 0.610 | let through |
+| how bad is cell bio | 1 | 0.510 | let through |
+| how much is the dryer in morrow | 1, 2 | 0.279 | let through |
+| how much printing do I get | 1 | 0.364 | let through |
+| can I just walk into the doctor | 1 | 0.716 | **refused** |
+```
+
+The same function in `results/run_2026-10-05_0034_after.md`:
+
+```
+Produced by `run_eval.py::check_student_phrased`, cutoff 0.77. Let through 5 of 5.
+
+| can I just walk into the doctor | 1 | 0.716 | let through |
+```
+
+And the question end to end through `app.py::ask` after the change, so the
+answer comes from `generate.py::answer_from_chunks`:
+
+```
+$ python app.py ask "can I just walk into the doctor"
+  (best distance 0.716, cutoff 0.77)
+
+Yes, walk-in hours are from 8am to 11am. 
+
+Source: health_center.txt
+
+Sources retrieved: dining_the_atrium.txt, health_center.txt
+```
+
+The same command at the old cutoff, for comparison (`--threshold 0.7`):
+
+```
+$ python app.py ask "can I just walk into the doctor" --threshold 0.7
+  (best distance 0.716, cutoff 0.7)
+
+I don't have enough information about that.
+```
+
+**Did it help?** Yes, on the failure it was aimed at. The tightened gate row
+went from 4/5 in every run to 5/5 in every run, and the doctor question now gets
+a correct, cited answer instead of a refusal. Nothing else moved: criteria 1, 2,
+3, 4 and 5 are identical in both logs, and all five out-of-corpus questions are
+still refused.
+
+What it cost, which is the strongest case against the change: the out-of-corpus
+margin shrank from 0.125 to 0.055. I chose 0.77 using the very question it
+fixes, out of a test set of ten. An off-topic question that lands at 0.76, a
+nearer neighbour than anything in `OUT_OF_SCOPE`, would now get through to the
+model, and a student phrasing worse than 0.77 would still be refused. The fix
+holds for the questions I have. It isn't evidence the gate is right in general.
 
 ## What's Still Broken
 

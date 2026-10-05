@@ -81,6 +81,21 @@ OUT_OF_SCOPE = [
 ]
 
 
+# The same five facts as QUESTIONS, typed the way a student would, for the
+# tightened criterion 3 in unit 2: the gate has to let real questions through,
+# not only keep fake ones out. The first two are from my Milestone 4 notes in
+# config.py; the last three I wrote in unit 2 before measuring them. The
+# Milestone 4 "is it expensive to dry clothes" names no building, so it has no
+# single right answer and was replaced by the Morrow one.
+STUDENT_PHRASED = [
+    {"question": "can I still get out of a class", "expects": "week six"},
+    {"question": "how bad is cell bio", "expects": "9 to 11 hours"},
+    {"question": "how much is the dryer in morrow", "expects": "$1.25"},
+    {"question": "how much printing do I get", "expects": "600"},
+    {"question": "can I just walk into the doctor", "expects": "8am to 11am"},
+]
+
+
 def answered() -> list[dict]:
     """The questions you've actually filled in."""
     return [q for q in QUESTIONS if q.get("question", "").strip()]
